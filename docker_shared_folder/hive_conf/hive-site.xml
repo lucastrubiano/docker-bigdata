@@ -33,5 +33,5 @@
     <property><name>javax.jdo.option.ConnectionURL</name><value>jdbc:postgresql://metastore-db:5432/metastore_db</value></property>
     <property><name>datanucleus.schema.autoCreateAll</name><value>true</value></property>
     <property><name>javax.jdo.option.ConnectionUserName</name><value>hive</value></property>
-    <property><name>javax.jdo.option.hive</name><value>hive</value></property>
+    <property><name>javax.jdo.option.ConnectionPassword</name><value>hive</value></property>
 </configuration>
