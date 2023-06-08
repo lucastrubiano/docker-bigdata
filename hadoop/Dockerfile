@@ -1,5 +1,5 @@
 # Dockerfile
-# For Hive 3.1.3
+# For Hadoop 3.3.5
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,22 +21,18 @@
 FROM ubuntu:mantic as unarchive
 
 # Define environment variables
-
 ENV HADOOP_VERSION=3.3.5
 
 # Print version information
-
 RUN echo "Hadoop version: $HADOOP_VERSION"
 
 # Install dependencies
-
 RUN set -ex; \
     apt-get update; \
     apt-get -y install wget; \
     rm -rf /var/lib/apt/lists/*
 
 # Download and extract hadoop, hive and tez
-
 WORKDIR /opt
 
 RUN wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
@@ -45,6 +41,7 @@ RUN wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoo
 
 RUN tar -xzvf /opt/hadoop-$HADOOP_VERSION.tar.gz -C /opt/ && \
     rm -rf /opt/hadoop-$HADOOP_VERSION/share/doc/*
+
 
 # Build final image
 
@@ -63,34 +60,29 @@ RUN set -ex; \
 # Set necessary environment variables.
 ENV HADOOP_HOME=/opt/hadoop
 
+# Add Hadoop bin/ directory to PATH
 ENV PATH=$HADOOP_HOME/bin:$PATH
 
-COPY entrypoint.sh /
-RUN chmod +x /entrypoint.sh
-
 ARG UID=1000
-RUN adduser --no-create-home --disabled-login --gecos "" --uid $UID hdfs && \
-    chown hdfs /opt/hadoop && \
-    mkdir -p /opt/hive/data/warehouse && \
-    chown -R hive /opt/hive/data/warehouse && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /user/hive/warehouse && \
-    $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse
+# RUN adduser --no-create-home --disabled-login --gecos "" --uid $UID hadoop && \
+RUN adduser --disabled-login --gecos "" --uid $UID hadoop && \
+    chown hadoop /opt/hadoop && \
+    $HADOOP_HOME/bin/hadoop fs -mkdir -p /tmp && \
+    $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp
 
-RUN adduser --no-create-home --disabled-login --gecos "" --uid $UID hive && \
-    mkdir -p /opt/hive/data/warehouse && \
-    chown -R hive /opt/hive/data/warehouse && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /user/hive/warehouse && \
-    $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse && \
-    mkdir -p /home/hive/ && \
-    chown -R hive /home/hive/ && \
-    chmod 777 /home/hive/
+USER hadoop
 
+WORKDIR /opt/hadoop
 
-# USER hive
-# WORKDIR /opt/hive
-# EXPOSE 10000 10002 9083
-ENTRYPOINT ["sh", "-c", "/entrypoint.sh"]
+# Define default command.
+# CMD ["bash"]
+
+# Expose ports.
+#   - 50010: DataNode
+#   - 50020: DataNode (secure)
+#   - 50070: NameNode
+#   - 50075: NameNode (secure)
+#   - 50090: SecondaryNameNode
+#   - 8020:  NameNode IPC
+
+# EXPOSE 50010 50020 50070 50075 50090 8020

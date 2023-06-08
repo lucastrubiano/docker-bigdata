@@ -18,4 +18,4 @@
 #
 set -x
 
-docker build -t "lucastrubiano/hive:hive_3_1_3__hadoop_3_3_5__tez_0_9_2" .
+docker build -t "lucastrubiano/hadoop:hadoop_3_3_5" .

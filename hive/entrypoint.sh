@@ -21,9 +21,11 @@ set -x
 
 : ${DB_DRIVER:=derby}
 
-SKIP_SCHEMA_INIT="${IS_RESUME:-false}"
+: ${SKIP_SCHEMA_INIT:=false}
 
 function initialize_hive {
+  echo "Initializing schema..."
+  echo "$HIVE_HOME/bin/schematool -dbType $DB_DRIVER -initSchema"
   $HIVE_HOME/bin/schematool -dbType $DB_DRIVER -initSchema
   if [ $? -eq 0 ]; then
     echo "Initialized schema successfully.."

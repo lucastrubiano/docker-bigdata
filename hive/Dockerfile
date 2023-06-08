@@ -21,89 +21,77 @@
 FROM ubuntu:mantic as unarchive
 
 # Define environment variables
-
 ENV HADOOP_VERSION=3.3.5
 ENV HIVE_VERSION=3.1.3
 ENV TEZ_VERSION=0.9.2
 
 # Print version information
-
 RUN echo "Hadoop version: $HADOOP_VERSION" && \
     echo "Hive version: $HIVE_VERSION" && \
     echo "Tez version: $TEZ_VERSION"
 
 # Install dependencies
-
 RUN set -ex; \
     apt-get update; \
     apt-get -y install wget; \
     rm -rf /var/lib/apt/lists/*
 
 # Download and extract hadoop, hive and tez
-
 WORKDIR /opt
 
-RUN wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
-    wget https://downloads.apache.org/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz && \
+# RUN wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
+RUN wget https://downloads.apache.org/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz && \
     wget https://downloads.apache.org/tez/$TEZ_VERSION/apache-tez-$TEZ_VERSION-bin.tar.gz
 
-# COPY hadoop-$HADOOP_VERSION.tar.gz /opt
 # COPY apache-hive-$HIVE_VERSION-bin.tar.gz /opt
 # COPY apache-tez-$TEZ_VERSION-bin.tar.gz /opt
 
-RUN tar -xzvf /opt/hadoop-$HADOOP_VERSION.tar.gz -C /opt/ && \
-    rm -rf /opt/hadoop-$HADOOP_VERSION/share/doc/* && \
-    tar -xzvf /opt/apache-hive-$HIVE_VERSION-bin.tar.gz -C /opt/ && \
+# RUN tar -xzvf /opt/hadoop-$HADOOP_VERSION.tar.gz -C /opt/ && \
+#     rm -rf /opt/hadoop-$HADOOP_VERSION/share/doc/* && \
+RUN tar -xzvf /opt/apache-hive-$HIVE_VERSION-bin.tar.gz -C /opt/ && \
     rm -rf /opt/apache-hive-$HIVE_VERSION-bin/jdbc/* && \
     tar -xzvf /opt/apache-tez-$TEZ_VERSION-bin.tar.gz -C /opt && \
     rm -rf /opt/apache-tez-$TEZ_VERSION-bin/share/*
 
+
 # Build final image
+FROM lucastrubiano/hadoop:hadoop_3_3_5 as run
 
-FROM openjdk:8-jre-slim AS run
+USER root
 
+# Define environment variables
 ENV HADOOP_VERSION=3.3.5
 ENV HIVE_VERSION=3.1.3
 ENV TEZ_VERSION=0.9.2
 
-COPY --from=unarchive /opt/hadoop-$HADOOP_VERSION /opt/hadoop
 COPY --from=unarchive /opt/apache-hive-$HIVE_VERSION-bin /opt/hive
 COPY --from=unarchive /opt/apache-tez-$TEZ_VERSION-bin /opt/tez
 
-# Install dependencies
-RUN set -ex; \
-    apt-get update; \
-    apt-get -y install procps; \
-    rm -rf /var/lib/apt/lists/*
-
 # Set necessary environment variables.
-ENV HADOOP_HOME=/opt/hadoop \
-    HIVE_HOME=/opt/hive \
+# ENV HADOOP_HOME=/opt/hadoop \
+ENV HIVE_HOME=/opt/hive \
     TEZ_HOME=/opt/tez
 
-ENV PATH=$HIVE_HOME/bin:$HADOOP_HOME/bin:$PATH
+ENV PATH=$HIVE_HOME/bin:$TEZ_HOME/bin:$PATH
 
 COPY entrypoint.sh /
-COPY conf $HIVE_HOME/conf
 RUN chmod +x /entrypoint.sh
 
-ARG UID=1000
+ARG UID=1001
 RUN adduser --no-create-home --disabled-login --gecos "" --uid $UID hive && \
     chown hive /opt/tez && \
-    chown hive /opt/hive && \
-    chown hive /opt/hadoop && \
-    chown hive /opt/hive/conf && \
-    mkdir -p /opt/hive/data/warehouse && \
-    chown -R hive /opt/hive/data/warehouse && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -mkdir /user/hive/warehouse && \
+    chown hive -R /opt/hive
+RUN $HADOOP_HOME/bin/hadoop fs -mkdir -p /tmp && \
+    $HADOOP_HOME/bin/hadoop fs -mkdir -p /user/hive/warehouse && \
     $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp && \
-    $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse && \
-    mkdir -p /home/hive/ && \
-    chown -R hive /home/hive/ && \
-    chmod 777 /home/hive/
+    $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse
 
 USER hive
 WORKDIR /opt/hive
-EXPOSE 10000 10002 9083
+# EXPOSE 10000
+EXPOSE 10000 9083
+
+# -dbType [derby|mysql|postgres|oracle|mssql]
+# CMD ["$HIVE_HOME/bin/schematool", "-dbType", "derby", "-initSchema"]
+
 ENTRYPOINT ["sh", "-c", "/entrypoint.sh"]
