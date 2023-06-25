@@ -81,12 +81,14 @@ ARG UID=1001
 RUN adduser --no-create-home --disabled-login --gecos "" --uid $UID hive && \
     chown hive /opt/tez && \
     chown hive -R /opt/hive
+
+USER hive
+
 RUN $HADOOP_HOME/bin/hadoop fs -mkdir -p /tmp && \
     $HADOOP_HOME/bin/hadoop fs -mkdir -p /user/hive/warehouse && \
     $HADOOP_HOME/bin/hadoop fs -chmod g+w /tmp && \
     $HADOOP_HOME/bin/hadoop fs -chmod g+w /user/hive/warehouse
 
-USER hive
 WORKDIR /opt/hive
 # EXPOSE 10000
 EXPOSE 10000 9083

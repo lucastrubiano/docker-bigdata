@@ -30,3 +30,15 @@ El Docker va a contener los siguientes servicios:
 <!-- * MongoDB -->
 <!-- * MySQL -->
 <!-- * Cassandra -->
+
+Comandos para ir corriendo y probando el cluster:
+
+## Probando Hive
+
+```bash
+docker run -it --name test_hs2 --hostname test_hs2 lucastrubiano/hive:hive_3_1_3__tez_0_9_2__hadoop_3_3_5 hive
+```
+
+```bash
+docker exec -it hiveserver2 bash
+```
