@@ -23,6 +23,8 @@ set -x
 
 : ${SKIP_SCHEMA_INIT:=false}
 
+: ${SERVICE_NAME:=hiveserver2}
+
 function initialize_hive {
   echo "Initializing schema..."
   echo "$HIVE_HOME/bin/schematool -dbType $DB_DRIVER -initSchema"
@@ -31,7 +33,7 @@ function initialize_hive {
     echo "Initialized schema successfully.."
   else
     echo "Schema initialization failed!"
-    exit 1
+    # exit 1
   fi
 }
 
