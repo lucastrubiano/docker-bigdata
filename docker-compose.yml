@@ -103,9 +103,11 @@ services:
       # SERVICE_OPTS: '-Xmx1G -Dhive.metastore.uris=thrift://metastore:9083'
       # HIVE_SERVER2_THRIFT_BIND_HOST: '' ??
     ports:
+      - '8020:8020'
       - '9083:9083'
       - '10000:10000'
       - '10002:10002'
+      - '50070:50070'
     volumes:
       - ./docker_shared_folder/data/warehouse:/opt/hive/data/warehouse
       - ./docker_shared_folder/drivers/postgresql-42.5.2.jar:/opt/hive/lib/postgresql-42.5.2.jar
@@ -119,24 +121,24 @@ services:
   #          Postgres (BDE OLTP)
   # =====================================
 
-  # postgres-bde:
-  #   image: postgres:15
-  #   container_name: postgres-bde
-  #   hostname: postgres-bde
-  #   ports:
-  #     - "5433:5433"
-  #   volumes:
-  #     - ./docker_shared_folder/bde:/var/lib/postgresql/data
-  #   environment:
-  #     # - POSTGRES_HOST=postgres-bde
-  #     - POSTGRES_USER=prod
-  #     - POSTGRES_PASSWORD=prod
-  #     - POSTGRES_DB=bde
-  #     - "POSTGRES_HOST_AUTH_METHOD=trust"
-  #   command: "-p 5433"
-  #   networks:
-  #     bigdata_net:
-  #       ipv4_address: 172.16.1.5
+  bde:
+    image: postgres:15
+    container_name: bde
+    hostname: bde
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./docker_shared_folder/data/bde:/var/lib/postgresql/data
+    environment:
+      # - POSTGRES_HOST=dbe
+      - POSTGRES_USER=prod
+      - POSTGRES_PASSWORD=prod
+      - POSTGRES_DB=bde
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+    command: "-p 5433"
+    networks:
+      bigdata_net:
+        ipv4_address: 172.16.1.5
 
   # =====================================
   #                 HUE
@@ -150,12 +152,13 @@ services:
     dns: 8.8.8.8
     ports:
       - "8888:8888"
-    # environment:
-    #   SERVICE_PRECONDITION: "postgres-bde:5433" #"hdfs-namenode:50070 hdfs-datanode:50075 hive-metastore-postgresql:5432 yarn-resourcemanager:8088 hive-metastore:9083 database-dbe:5433"
+    environment:
+      SERVICE_PRECONDITION: "hiveserver2:10002 bde:5433" #"hdfs-namenode:50070 hdfs-datanode:50075 hive-metastore-postgresql:5432 yarn-resourcemanager:8088 hive-metastore:9083 database-dbe:5433"
     volumes:
       - ./docker_shared_folder/hue/hue.ini:/usr/share/hue/desktop/conf/z-hue.ini
-    # depends_on:
-    #   - postgres-bde
+    depends_on:
+      - hiveserver2
+      - bde
     networks:
       bigdata_net:
         ipv4_address: 172.16.1.6
